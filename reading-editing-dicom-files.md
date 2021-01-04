@@ -12,7 +12,7 @@ However, some of these are actually required/conditionally required to qualify a
 
 On top of all this, in the 21st century, we’re most likely using tomographic techniques giving us 3 or more dimensional data, since DICOM files only represent a 2D image/slice we end up with several just to make one volume and each one of these files metadata fields must correlate with each other!
 
-### Pydicom
+## Pydicom
 
 Pydicom is the package you want for all your DICOM metadata field editing (maybe more but I’ve not needed it for anything else). So go ahead and get started with a quick pip install:
 
@@ -72,7 +72,7 @@ Viewing individual fields & setting fields to new values:
 'NewName'
 ```
 
-### Dicom Tags
+## Dicom Tags
 
 It may have been noted that every field has an individual code (0000, 0000), known as a tag. The first four numbers denote the field’s group (e.g. 0010 = Patient) and 2nd four denote the ‘element’. The individual numbers of the 4 numbered tags are hexadecimal so instead of taking on values from 0–9 to mean 0–9, they can extend beyond to take on values up to 15 by including the first 6 letters of the alphabet. You can look up these standard tags.
 
@@ -90,3 +90,55 @@ We can use these tags instead of the name to change fields where `0x` in python 
 
 Note the different ways that hexadecimal reference to the tag can be made.
 
+Sometimes you may wish to add a tag, we can add new fields ourselves using the designated function `dataset.add_new(tag, VR, value)`. At this point we need to understand a bit more about our DICOM elements, namely ‘VR’ which stands for Value Representation, for Spatial Resolution, these take on floats and thus have a VR of DS (Decimal String). Always be sure to **look up** your tags!
+
+```
+>>> ds.add_new('0x181050', 'DS', ['1.000000', '1.000000', '1.000000'])
+>>> ds[0x181050]
+(0018, 1050) Spatial Resolution               DS: ['1.000000', '1.000000', '1.000000']
+```
+
+## Case Example: Missing Slice Location
+
+So in my case, I had geometry issues where the first DICOM file of my 3D image series was missing the “Slice Location” (0020, ) tag which every other field had and resulted in my volume to be loading in the wrong order. On top of this, it appeared to also be missing an Image Orientation (Patient) (0020, 0037) tag which doesn’t change for each image and is fine to remain at a value of [1, 0, 0, 0, 1, 0]. So, summarising:
+
+    Slice Location needs to be added to the first DICOM image.
+    Image Orientation (Patient) for every DICOM image in the series at a fixed value.
+    
+```python
+import os
+import pydicom
+
+# paths to data and save location
+filepath = './data/' # directory containing the dicom series
+dcmprefix = 'Image_' # Individual dicom file prefix before number
+firstdcm = dcmprefix + '%04d.DICOM' %1 # first dicom image to inspect metadata fields
+newdir = './data-edited/' # directory to save new metadata fields
+
+# Find total number of dicom files in series
+j = 0
+for file in os.listdir(filepath):
+    if file.endswith(".DICOM"):
+        j = j + 1
+totaldcm = j 
+
+# Read all tags for first image
+ds = pydicom.filereader.dcmread(filepath+firstdcm)
+print(ds)
+
+## load the data
+for i in range(totaldcm):
+    filenumber = i+1
+    name = '%04d.DICOM' %filenumber
+    ds = pydicom.filereader.dcmread(filepath+dcmprefix+name)
+    if i == 0: ## 1. Adding slicelocation for first dicom image
+        ds.SliceLocation = '0.000000'
+    else:
+        pass
+    ## 2. Set ImageOrientation Patient for all images
+    ds.add_new('0x00200037', 'DS', ['1.000000','0.000000','0.000000','0.000000','1.000000','0.000000'])
+    ## write the dcm file to new directory
+    ds.save_as(newdir+dcmprefix+name)
+
+print('COMPLETE')
+```
