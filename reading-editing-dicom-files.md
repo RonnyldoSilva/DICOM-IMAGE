@@ -142,3 +142,5 @@ for i in range(totaldcm):
 
 print('COMPLETE')
 ```
+
+Pydicom documentation which can be found at https://pydicom.github.io/pydicom/stable/pydicom_user_guide.html
