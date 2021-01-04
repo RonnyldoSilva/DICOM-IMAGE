@@ -102,8 +102,8 @@ Sometimes you may wish to add a tag, we can add new fields ourselves using the d
 
 So in my case, I had geometry issues where the first DICOM file of my 3D image series was missing the “Slice Location” (0020, ) tag which every other field had and resulted in my volume to be loading in the wrong order. On top of this, it appeared to also be missing an Image Orientation (Patient) (0020, 0037) tag which doesn’t change for each image and is fine to remain at a value of [1, 0, 0, 0, 1, 0]. So, summarising:
 
-    Slice Location needs to be added to the first DICOM image.
-    Image Orientation (Patient) for every DICOM image in the series at a fixed value.
+Slice Location needs to be added to the first DICOM image.
+Image Orientation (Patient) for every DICOM image in the series at a fixed value.
     
 ```python
 import os
